@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="https://cesium.com/downloads/cesiumjs/releases/1.81/Build/Cesium/Cesium.js"></script>
+  <link href="https://cesium.com/downloads/cesiumjs/releases/1.81/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/satellite.js/4.0.0/satellite.min.js"></script>
+  <link href="style.css" rel="stylesheet">
+</head>
+<body>
+  <div id="cesiumContainer"></div>
+  <script>
+    // Initialize the Cesium viewer.
+    const viewer = new Cesium.Viewer('cesiumContainer', {
+      imageryProvider: new Cesium.TileMapServiceImageryProvider({
+        url: Cesium.buildModuleUrl("Assets/Textures/NaturalEarthII"),
+      }),
+      baseLayerPicker: false, geocoder: false, homeButton: false, infoBox: false,
+      navigationHelpButton: false, sceneModePicker: false
+    });
+    viewer.scene.globe.enableLighting = true;
+    // These 2 lines are published by NORAD and allow us to predict where
+    // the ISS is at any given moment. They are regularly updated.
+    // Get the latest from: https://celestrak.com/satcat/tle.php?CATNR=25544. 
+    const ISS_TLE = 
+    `1 25544U 98067A   21121.52590485  .00001448  00000-0  34473-4 0  9997
+    2 25544  51.6435 213.5204 0002719 305.2287 173.7124 15.48967392281368`;
+    const satrec = satellite.twoline2satrec(
+      ISS_TLE.split('\n')[0].trim(), 
+      ISS_TLE.split('\n')[1].trim()
+    );
+    // Give SatelliteJS the TLE. Get back a longitude, latitude, height (km).
+    const positionAndVelocity = satellite.propagate(satrec, new Date());
+    const gmst = satellite.gstime(new Date());
+    const position = satellite.eciToGeodetic(positionAndVelocity.position, gmst);
+    // Visualize the satellite at this location with a red dot.
+    const satellitePoint = viewer.entities.add({
+      position: Cesium.Cartesian3.fromRadians(
+        position.longitude, position.latitude, position.height * 1000
+      ),
+      point: { pixelSize: 5, color: Cesium.Color.RED }
+    });
+  </script>
+</body>
+</html>

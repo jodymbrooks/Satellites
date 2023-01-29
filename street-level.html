@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="https://cesium.com/downloads/cesiumjs/releases/1.81/Build/Cesium/Cesium.js"></script>
+  <link href="https://cesium.com/downloads/cesiumjs/releases/1.81/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/satellite.js/4.0.0/satellite.min.js"></script>
+  <link href="style.css" rel="stylesheet">
+</head>
+<body>
+  <div id="cesiumContainer"></div>
+  <script>
+    // This is using my personal Cesium ion token to load high resolution satellite imagery
+    // and global 3D buildings.
+    // Get your token from https://cesium.com/ion/tokens
+    Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJhODdhN2QyNS0wYTQ1LTRlNTctYmYzMy1jY2YxOTc1MTFmODEiLCJpZCI6MzkxNjAsImlhdCI6MTYxOTk4MzAwNX0.CvpQvRktRHpCtI3HQKfKqB7PYM1CkGhVd6PjKZphmKE';
+    const viewer = new Cesium.Viewer('cesiumContainer', {
+      terrainProvider: Cesium.createWorldTerrain(),
+      infoBox: false
+    });
+    viewer.scene.globe.enableLighting = true;
+    // Add the global 3D buildings layer
+    const osmBuildings = viewer.scene.primitives.add(Cesium.createOsmBuildings());
+    const ISS_TLE = 
+    `1 25544U 98067A   21121.52590485  .00001448  00000-0  34473-4 0  9997
+2 25544  51.6435 213.5204 0002719 305.2287 173.7124 15.48967392281368`;
+    const satrec = satellite.twoline2satrec(ISS_TLE.split('\n')[0].trim(), ISS_TLE.split('\n')[1].trim());
+
+    // Instead of starting at now, start at this specific time where we know the ISS passes in Melbourne 
+    const passageTimeIso = "2021-05-08T07:57:52.7512681462685578Z";
+    const passageTime = Cesium.JulianDate.fromIso8601("2021-05-08T07:57:52.7512681462685578Z");
+    const positionProperty = new Cesium.SampledPositionProperty();
+    const totalSeconds = 60 * 15;
+    const timestepInSeconds = 1;
+    const start = Cesium.JulianDate.addSeconds(passageTime, -totalSeconds / 2, new Cesium.JulianDate());
+    const stop = Cesium.JulianDate.addSeconds(passageTime, totalSeconds / 2, new Cesium.JulianDate());
+    viewer.clock.startTime = start.clone();
+    viewer.clock.stopTime = stop.clone();
+    viewer.clock.currentTime = passageTime.clone();
+    viewer.timeline.zoomTo(start, stop);
+    viewer.clock.multiplier = 40;
+    viewer.clock.clockRange = Cesium.ClockRange.LOOP_STOP;
+
+    for (let i = 0; i < totalSeconds; i+= timestepInSeconds) {
+      const time = Cesium.JulianDate.addSeconds(start, i, new Cesium.JulianDate());
+      const jsDate = Cesium.JulianDate.toDate(time);
+
+      const positionAndVelocity = satellite.propagate(satrec, jsDate);
+      const gmst = satellite.gstime(jsDate);
+      const p   = satellite.eciToGeodetic(positionAndVelocity.position, gmst);
+
+      const position = Cesium.Cartesian3.fromRadians(p.longitude, p.latitude, p.height * 1000);
+      positionProperty.addSample(time, position);
+    }
+
+    const animatedEntity = viewer.entities.add({
+      position: positionProperty,
+      point: { pixelSize: 5, color: Cesium.Color.GREEN }
+    });
+
+    // Make it start in the city 
+    viewer.camera.flyTo({
+            destination : new Cesium.Cartesian3(-4130938.195301343, 2896553.2018683464, -3889002.977762853),
+            orientation : {
+                direction : new Cesium.Cartesian3(0.6077752572755964, 0.14232299327121145, -0.7812511774262522),
+                up : new Cesium.Cartesian3(-0.7463206289023335, 0.43850674643138476, -0.500716838351764),
+            },
+            duration : 0
+        });
+    viewer.clock.currentTime = passageTime.clone();
+
+    // Hard-code select entity 
+    viewer.selectedEntity = animatedEntity;
+
+    // To detect whether we have a line of sight to the satellite, we could ray cast
+    // See: https://github.com/CesiumGS/cesium/issues/8439#issuecomment-603625377
+    // Alternatively, we can leverage the GPU to color based on whether it's visible 
+    // this requires using the low level materials API. 
+    // Here's a link to a code example with some helper functions
+    /*
+     https://sandcastle.cesium.com/index.html#c=xVVRb9s4DP4rQl5mt5niNG3Wrmmxrk22AFsXpNlwh8thUG2mFiZLhiRnzR3y30dZtpO0eRk2YH2oIpEf9fEjLS6ZJksO30GTCyLhO7kGw4uMfinPgnkrLvfXSlrGJeh5Kzyfy7lcIs5yAQbsLtAvvZuZNwb/zyUhhRava4exklMwqtAx0IVW2ZVBt3ESHEen/X7Ynsu1u8FzoiYGCTTXPOOWL8FQliRBda8nUm2oBpasJhiPG6A2BRksChlbriQJQlKycJzvVSETLh/u8hQ0IPUav2s4L/09h5hloBl1u7c7ToFzIk9Ctv3hliLvkRmaJ9zG6ZTJhxpHSESjdv37ZURPms1uSKoxQGHIITmJEOKdQreEe3gKpb5d2Zlm0iyUzoKKxUdmNX88puOb4e1sPPvbQdebWpZCoxzbujdGEILnRvHkHagMrF7tlnz41OyLjsRAW3gcIQtmSdMAE9BjaSyTMVwrofRVngPTbku/DKez4V9fR5+mH69mjRoufY747S5jGNlwJntB12nSJttLuJNavGKyoVjfvJtBTby21gk81Pm+fq5BRa9zkKkEhJd3k2Sjv6HAjL1V2qaf85ka8UdIRhpL1XTBs5TKz2KKSWOI4GWX9rpnx73+2dGrV73ucXR01MbG6Z+dnkb9o5NedBa5Nay64qDT5D6XscJ8SPP1YM57v6ctISa15akCtTIGU/xnr6L/VoKwppy7JWsAd4VesBg2Za/vIgT7BDRnApFk07flUSnKbJVD8KLsmhdt0sDcX+wON/qXPvTddDi8rb3WpUbrsOKZQG7TEeNiQ+SP850Ob/awXYe+oE3Z6HbLXfxky/2udvOcqhZTZsPjFyNjWIFDJcYn0I2WqLym6ltl7Oc8QYVd3w6XIO0HbiyadICP/MWll9hDDw/P/cYRTIE/pC4cipbSWJnAOx0gg26IC74b+L7i/3PiUBskdsTk92XXrpj4h/vXC+rZVW95q90aGLsScFk30Rue5Yhy8zegtGMhywWqZzr3RfwNh15sjGdCyKCzDR0kfEl4crFn/pNYMGPQsiiEuOP/wbx1Oeig/zOoUOXg+4RjQLCVc0u7lx/8IaV00MHtfqRVStwz/STyDw
+
+    */
+
+    // Helper function for getting the camera's current position/anglee
+    function getCameraFlyTo() {
+        var camera = viewer.camera;
+        var position = camera.position;
+        var direction = camera.direction;
+        var up = camera.up;
+
+        var cameraString = '{\n\
+            destination : new Cesium.Cartesian3(' + position.x + ', ' + position.y + ', ' + position.z + '),\n\
+            orientation : {\n\
+                direction : new Cesium.Cartesian3(' + direction.x + ', ' + direction.y + ', ' + direction.z + '),\n\
+                up : new Cesium.Cartesian3(' + up.x + ', ' + up.y + ', ' + up.z + '),\n\
+            },\n\
+            duration : 3\n\
+        }';
+        return cameraString;
+    }
+  </script>
+</body>
+</html>

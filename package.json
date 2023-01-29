@@ -1,0 +1,15 @@
+{
+  "name": "satellite-app",
+  "version": "1.0.0",
+  "description": "This is an example app showing you how to create a satellite tracker from scratch in JavaScript. [See the full guide here](https://dev.to/omar4ur/create-a-satellite-tracker-from-scratch-in-30-lines-of-javascript-32gk).",
+  "main": "index.js",
+  "dependencies": {
+    "cesium": "^1.101.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC"
+}

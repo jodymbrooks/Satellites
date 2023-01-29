@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<html lang="en">
+<head>
+  <script src="https://cesium.com/downloads/cesiumjs/releases/1.81/Build/Cesium/Cesium.js"></script>
+  <link href="https://cesium.com/downloads/cesiumjs/releases/1.81/Build/Cesium/Widgets/widgets.css" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/satellite.js/4.0.0/satellite.js"></script>
+  <link href="style.css" rel="stylesheet">
+  <script src="jody2.js"></script>
+  <style>
+    html, body {
+      display: flex;
+      flex-direction: row;
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+    }
+    #left, #right {
+      min-width: 300px;
+      padding-right: 10px;
+      display: flex;
+      flex-direction: column;
+    }
+    #legend {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    #cesiumContainer {
+      width: 800px;
+      height: 800px;
+      border: 2px solid darkgray;
+      box-sizing: border-box;
+    }
+
+  </style>
+</head>
+<body>
+  <div id="left">
+    <div id="legend"></div>
+  </div>
+  <div id="right">
+    <div id="cesiumContainer"></div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<html lang="en">
+<head>
+  <script src="https://cesium.com/downloads/cesiumjs/releases/1.81/Build/Cesium/Cesium.js"></script>
+  <link
+    href="https://cesium.com/downloads/cesiumjs/releases/1.81/Build/Cesium/Widgets/widgets.css"
+    rel="stylesheet"
+  />
+<link href="style.css" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/satellite.js/4.0.0/satellite.js"></script>
+</head>
+<body>
+  <div id="cesiumContainer"></div>
+  <script>
+    Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiIxNDdiMzlmMy01YzdjLTRjNzctOGFlMC05Yjk1MDllMTBmNGEiLCJpZCI6MTIyMTk2LCJpYXQiOjE2NzQ1ODk4ODh9._J-JzpiinojBuqjAF3-wu-s7kWE6iRzyDdDXiFwZac0';
+
+
+    // Initialize the Cesium viewer.
+    const viewer = new Cesium.Viewer('cesiumContainer', {
+        terrainProvider: Cesium.createWorldTerrain(),
+      //   imageryProvider: new Cesium.TileMapServiceImageryProvider({
+      //     url: Cesium.buildModuleUrl("Assets/Textures/NaturalEarthII"),
+      // }),
+      baseLayerPicker: false, geocoder: false, homeButton: false, infoBox: false,
+      navigationHelpButton: false, sceneModePicker: false
+    });
+    viewer.scene.globe.enableLighting = true;
+
+    // These 2 lines are published by NORAD and allow us to predict where
+    // the ISS is at any given moment. They are regularly updated.
+    // Get the latest from: https://celestrak.com/satcat/tle.php?CATNR=25544. 
+    // UPDATE: Above URL said to go here now: https://celestrak.org/NORAD/elements/gp.php?CATNR=25544
+
+    const ISS_CATNR = 25544;
+    fetch(`https://celestrak.org/NORAD/elements/gp.php?CATNR=${ISS_CATNR}`)
+      .then(response => response.text())
+      .then((data) => {
+
+        const issTle = data.substring(data.indexOf('\n')+1);
+        // console.log("ISS_TLE: ");
+        // console.log(issTle);
+
+        const satrec = satellite.twoline2satrec(
+          issTle.split('\n')[0].trim(), 
+          issTle.split('\n')[1].trim()
+        );
+
+        mapSatellite(satrec);
+      });
+
+      function mapSatellite(satrec)
+      {
+        window.setInterval(() => {
+          // Give SatelliteJS the TLE. Get back a longitude, latitude, height (km).
+          const positionAndVelocity = satellite.propagate(satrec, new Date());
+          const gmst = satellite.gstime(new Date());
+          const position = satellite.eciToGeodetic(positionAndVelocity.position, gmst);
+
+          // Visualize the satellite at this location with a red dot.
+          const satellitePoint = viewer.entities.add({
+            position: Cesium.Cartesian3.fromRadians(
+              position.longitude, position.latitude, position.height * 1000
+            ),
+            point: { pixelSize: 5, color: Cesium.Color.RED }
+          });
+        }, 10000);
+      }
+  </script>
+</body>
+</html>
