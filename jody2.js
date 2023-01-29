@@ -1,5 +1,4 @@
-// Mark's token
-Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJmZGQ3Yzg5Ny1iZmI4LTQ5ZWUtOTlkMS05YzQzMDljMmZiODciLCJpZCI6ODgzODksImlhdCI6MTY0OTE4NzM4OH0.Ooa4dDAgrPmaTmfLZoEAcIwSOrTPmBKPg2DBZHEQpvw';
+// Cesium.Ion.defaultAccessToken = 'add-token-here';
 
 const colors = [
   // { Color: "#696969", Name: "dimgray" },
@@ -95,25 +94,6 @@ async function addGroundStations()
   //   },
   //   label: {
   //     text: "Citizens Bank Park",
-  //     font: "14pt monospace",
-  //     style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-  //     outlineWidth: 2,
-  //     verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
-  //     pixelOffset: new Cesium.Cartesian2(0, -9),
-  //   },
-  // });
-
-  // const home = viewer.entities.add({
-  //   name: "Jody's House",
-  //   position: Cesium.Cartesian3.fromDegrees(34.86232116401732, -86.75911849789242),
-  //   point: {
-  //     pixelSize: 5,
-  //     color: Cesium.Color.BLUE,
-  //     outlineColor: Cesium.Color.WHITE,
-  //     outlineWidth: 2,
-  //   },
-  //   label: {
-  //     text: "Jody Brooks' House",
   //     font: "14pt monospace",
   //     style: Cesium.LabelStyle.FILL_AND_OUTLINE,
   //     outlineWidth: 2,
