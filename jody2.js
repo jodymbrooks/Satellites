@@ -36,7 +36,9 @@ const colors = [
 ];
 
 let viewer = null;
-let selectedSatName = null;
+let selectedEntityName = null;
+
+const groundStationEntities = [];
 
 
 document.addEventListener("DOMContentLoaded", function(event) {
@@ -83,28 +85,28 @@ function setupViewer() {
 
 async function addGroundStations()
 {
-  // const citizensBankPark = viewer.entities.add({
-  //   name: "Citizens Bank Park",
-  //   position: Cesium.Cartesian3.fromDegrees(-75.166493, 39.9060534),
-  //   point: {
-  //     pixelSize: 5,
-  //     color: Cesium.Color.RED,
-  //     outlineColor: Cesium.Color.WHITE,
-  //     outlineWidth: 2,
-  //   },
-  //   label: {
-  //     text: "Citizens Bank Park",
-  //     font: "14pt monospace",
-  //     style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-  //     outlineWidth: 2,
-  //     verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
-  //     pixelOffset: new Cesium.Cartesian2(0, -9),
-  //   },
-  // });
+  const rsa = viewer.entities.add({
+    name: "Redstone Arsenal",
+    position: Cesium.Cartesian3.fromDegrees(-86.64752499562553, 34.68538740550587),
+    point: {
+      pixelSize: 5,
+      color: Cesium.Color.RED,
+      outlineColor: Cesium.Color.WHITE,
+      outlineWidth: 2,
+    },
+    label: {
+      text: "Redstone Arsenal",
+      font: "14pt monospace",
+      style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+      outlineWidth: 2,
+      verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+      pixelOffset: new Cesium.Cartesian2(0, -9),
+    },
+  });
+
+  groundStationEntities.push(rsa);
 
   // viewer.zoomTo(viewer.entities);
-
-  
 }
 
 
@@ -164,7 +166,6 @@ async function fetchTLEsAndSatRecs(satellites)
 function mapSatellites(sats)
 {
   window.setInterval(() => {
-    viewer.entities.removeAll();
     sats.forEach(satEntry => {
       if (satEntry.SatRec)
         mapSatellite(satEntry);
@@ -187,61 +188,131 @@ function mapSatellites(sats)
     if (!positionAndVelocity.position) return; // bail if didn't calculate right
 
     const position = satellite.eciToGeodetic(positionAndVelocity.position, gmst);
+    console.log(`${name}: ${Math.round(position.height)}km ALT`);
 
     // Visualize the satellite at this location with a red dot.
-    const satellitePoint = viewer.entities.add({
-      position: Cesium.Cartesian3.fromRadians(
+    if (satEntry.viewerEntity)
+    {  // already have an entity, so just update its position
+      satEntry.viewerEntity.position = Cesium.Cartesian3.fromRadians(
         position.longitude, position.latitude, position.height * 1000
-      ),
-      point: { pixelSize: 5, color: satEntry.Color },
-      name: name,
-      description: name,
-      label: {
-        text: name,
-        font: "14pt monospace",
-        style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-        outlineWidth: 2,
-        verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
-        pixelOffset: new Cesium.Cartesian2(0, -9),
-      },
-    });
-
-    satEntry.satellitePoint = satellitePoint;
-
-    if (selectedSatName == satEntry.Name) {
-      viewer.selectedEntity = null;
-      // viewer.trackedEntity = satellitePoint;
+      );
     }
+    else
+    { // need to create the entity the first time and store a reference to it on satEntry
+      const viewerEntity = viewer.entities.add({
+        position: Cesium.Cartesian3.fromRadians(
+          position.longitude, position.latitude, position.height * 1000
+        ),
+        point: { pixelSize: 5, color: satEntry.Color },
+        name: name,
+        description: name,
+        label: {
+          text: name,
+          font: "14pt monospace",
+          style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+          outlineWidth: 2,
+          verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+          pixelOffset: new Cesium.Cartesian2(0, -9),
+        },
+      });
+      satEntry.viewerEntity = viewerEntity;
+    }
+
+    const gs = groundStationEntities[0];
+    gsPos = gs.position.getValue();
+    satPos = satEntry.viewerEntity.position.getValue();
+    const distanceFromGroundStation0 = Cesium.Cartesian3.distance(gsPos, satPos);
+    console.log(`Distance from ${gs.name} to ${name}: ${Math.round(distanceFromGroundStation0/1000)} km`);
+
+    const angleFromGroundStation0 = calculateAngleBetweenTwoPoints(gsPos, satPos);
+    console.log(`Angle from ${gs.name} to ${name}: ${angleFromGroundStation0}`);
+
+    // Consider "access" to mean "line of sight between the ground location, and the satellite unobstructed by the earth sphere (elevation angle > 0 + terrain/buildings)"
+    const groundStation0HasAccess = angleFromGroundStation0 > 10;
+    console.log(`    ${gs.name} hasAccess: ${groundStation0HasAccess}`);
   }
 
   function buildLegend(satellites) {
     const legend = document.getElementById('legend');
-    const ul = document.createElement("ul");
-    legend.appendChild(ul);
+
+
+    legend.appendChild(document.createTextNode('Ground Stations'));
+    const ulGs = document.createElement("ul");
+    legend.appendChild(ulGs);
+    groundStationEntities.forEach(gs => {
+      const li = document.createElement("li");
+      ulGs.appendChild(li);
+      li.textContent = gs.name;
+      li.viewerEntity = gs;
+      li.onclick = handleLegendItemClick;
+    });
+
+    legend.appendChild(document.createElement('br'));
+    legend.appendChild(document.createTextNode('Satellites'));
+
+    const ulSats = document.createElement("ul");
+    legend.appendChild(ulSats);
     satellites.forEach(satEntry => {
       if (satEntry.ColorName) {
         const li = document.createElement("li");
-        ul.appendChild(li);
+        ulSats.appendChild(li);
         li.textContent = `${satEntry.Name}: ${satEntry.ColorName}`;
-        li.satEntry = satEntry;
+        li.satEntry = satEntry; // won't have the viewerEntity yet so just store the satEntry which will eventually have the viewerEntity on it
         li.onclick = handleLegendItemClick;
       }
     });
 
     async function handleLegendItemClick(event)
     {
-      const satEntry = event?.target?.satEntry;
-      if (!satEntry) return;
+      const viewerEntity = event?.target?.viewerEntity ?? event?.target?.satEntry?.viewerEntity;
+      if (!viewerEntity) return;
 
-      selectedSatName = satEntry.Name;
+      selectedEntityName = viewerEntity.name;
 
-      const satellitePoint = satEntry.satellitePoint;
-      console.log(satEntry);
-      // viewer.zoomTo(satellitePoint);
-      // viewer.trackedEntity = satellitePoint;
-      const result = await viewer.flyTo(satellitePoint, {offset: new Cesium.HeadingPitchRange(0, -2, 10000000)});
+      console.log(viewerEntity);
+      // viewer.zoomTo(viewerEntity);
+      // viewer.trackedEntity = viewerEntity;
+      const result = await viewer.flyTo(viewerEntity, {offset: new Cesium.HeadingPitchRange(0, -2, 10000000)});
       if (result) {
-        viewer.selectedEntity = satellitePoint;
+        viewer.selectedEntity = viewerEntity;
       }
     }
+  }
+
+  function calculateAngleBetweenTwoPoints(startPoint, endPoint) // both Cartesian3
+  {
+    var startPoint1 = new Cesium.Cartesian3.fromDegrees(-107, 30, 3000);
+    var endPoint1 = new Cesium.Cartesian3.fromDegrees(-112, 25, 1000000);
+    
+    // // Add the line
+    // var line =  viewer.entities.add({
+    //     polyline : {
+    //                 positions : [startPoint, endPoint],
+    //                 width : 2,
+    //                 material : Cesium.Color.BLUE,
+    //                 followSurface : new Cesium.ConstantProperty(false)
+    //     }
+    // });
+    // // viewer.zoomTo(line);
+    
+    //Obtain vector by taking difference of the end points
+    var scratch1= new Cesium.Cartesian3();
+    var difference = Cesium.Cartesian3.subtract(endPoint, startPoint, scratch1);
+    difference = Cesium.Cartesian3.normalize(difference, scratch1);
+    console.log("Difference: " + difference);
+    
+    //Obtain surface normal by normalizing the starting point position
+    var scratch2 = new Cesium.Cartesian3();
+    var surfaceNormal = Cesium.Cartesian3.normalize(startPoint, scratch2);
+    console.log("Surface normal: " + surfaceNormal);
+    
+    //Take the dot product of your given vector and the surface normal
+    var dotProduct = Cesium.Cartesian3.dot(difference, surfaceNormal);
+    console.log("Dot product: " + dotProduct);
+    
+    //Arcos the result
+    var angle = 90 - Math.acos(dotProduct) * Cesium.Math.DEGREES_PER_RADIAN ;
+    console.log("Angle: " + angle);
+
+    return angle;
   }
