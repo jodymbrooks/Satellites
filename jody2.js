@@ -1,5 +1,10 @@
 // Cesium.Ion.defaultAccessToken = 'add-token-here';
 
+// Options - TODO: make available by UI
+
+let showLabels = true;
+
+
 const colors = [
   // { Color: "#696969", Name: "dimgray" },
   { Color: "#556b2f", Name: "darkolivegreen" },
@@ -35,8 +40,10 @@ const colors = [
   { Color: "#ffc0cb", Name: "pink" }    
 ];
 
+
 let viewer = null;
 let selectedEntityName = null;
+
 
 const groundStationEntities = [];
 
@@ -205,16 +212,19 @@ function mapSatellites(sats)
         ),
         point: { pixelSize: 5, color: satEntry.Color },
         name: name,
-        description: name,
-        label: {
+        description: name
+      });
+
+      if (showLabels) {
+        viewerEntity.label = {
           text: name,
           font: "14pt monospace",
           style: Cesium.LabelStyle.FILL_AND_OUTLINE,
           outlineWidth: 2,
           verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
           pixelOffset: new Cesium.Cartesian2(0, -9),
-        },
-      });
+        };
+      }
       satEntry.viewerEntity = viewerEntity;
     }
 
@@ -232,9 +242,9 @@ function mapSatellites(sats)
     console.log(`    ${gs.name} hasAccess: ${groundStation0HasAccess}`);
   }
 
-  function buildLegend(satellites) {
+  function buildLegend(satellites)
+  {
     const legend = document.getElementById('legend');
-
 
     legend.appendChild(document.createTextNode('Ground Stations'));
     const ulGs = document.createElement("ul");
@@ -279,21 +289,32 @@ function mapSatellites(sats)
     }
   }
 
+  function buildTable(groundStations, satellites)
+  {
+    const table = document.getElementById('the-table');
+
+
+  }
+
+  let firstTime = 1;
   function calculateAngleBetweenTwoPoints(startPoint, endPoint) // both Cartesian3
   {
-    var startPoint1 = new Cesium.Cartesian3.fromDegrees(-107, 30, 3000);
-    var endPoint1 = new Cesium.Cartesian3.fromDegrees(-112, 25, 1000000);
-    
-    // // Add the line
-    // var line =  viewer.entities.add({
-    //     polyline : {
-    //                 positions : [startPoint, endPoint],
-    //                 width : 2,
-    //                 material : Cesium.Color.BLUE,
-    //                 followSurface : new Cesium.ConstantProperty(false)
-    //     }
-    // });
-    // // viewer.zoomTo(line);
+    // var startPoint1 = new Cesium.Cartesian3.fromDegrees(-107, 30, 3000);
+    // var endPoint1 = new Cesium.Cartesian3.fromDegrees(-112, 25, 1000000);
+
+    if (firstTime) {
+      firstTime = 0;
+      // Add the line
+      var line =  viewer.entities.add({
+          polyline : {
+                      positions : [startPoint, endPoint],
+                      width : 2,
+                      material : Cesium.Color.BLUE,
+                      followSurface : new Cesium.ConstantProperty(false)
+          }
+      });
+      // // viewer.zoomTo(line);
+    }
     
     //Obtain vector by taking difference of the end points
     var scratch1= new Cesium.Cartesian3();

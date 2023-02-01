@@ -27,8 +27,9 @@
       flex-direction: column;
     }
     #cesiumContainer {
-      width: 800px;
-      height: 800px;
+      /* width: 800px;
+      height: 800px; */
+      flex: 1;
       border: 2px solid darkgray;
       box-sizing: border-box;
     }
@@ -36,11 +37,18 @@
   </style>
 </head>
 <body>
+  <!-- <div id="top"> -->
   <div id="left">
-    <div id="legend"></div>
+  <div id="legend"></div>
   </div>
   <div id="right">
     <div id="cesiumContainer"></div>
+  </div>
+</div>
+  <!-- <div id="bottom">
+    <div id="table-container">
+      <table id="the-table"></table>
     </div>
+  </div> -->
 </body>
 </html>
