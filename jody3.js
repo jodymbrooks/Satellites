@@ -230,11 +230,12 @@ function mapSatellites(satellites, groundStationEntities, viewer)
     // Create GS row and cell for each sat
     groundStationEntities.forEach((gsEntity, index) => {
       row = table.insertRow(index+1); // +1 to account for header row
-      row.viewerEntity = gsEntity;
       row.dataset.gs = gsEntity.name;
       col = 0;
       cell = row.insertCell(col++);
       cell.innerHTML = gsEntity.name;
+      cell.viewer = viewer;
+      cell.viewerEntity = gsEntity;
 
       satellites.forEach(satEntry => {
         if (satEntry.ColorName) {
@@ -243,7 +244,6 @@ function mapSatellites(satellites, groundStationEntities, viewer)
           cell.dataset.sat = satEntry.Name;
           cell.viewer = viewer;
           cell.satEntry = satEntry; // won't have the viewerEntity yet so just store the satEntry which will eventually have the viewerEntity on it
-          // cell.onclick = (event) => handleTableItemClick(event, null, satEntry, viewer);
         }
       });  
     });
