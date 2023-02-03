@@ -7,8 +7,8 @@
     "http-server": "^14.1.1"
   },
   "scripts": {
-    "initialize_for_node_http_server": "npm install",
-    "start_node_http_server": "node node_modules/http-server/bin/http-server ."
+    "init": "npm install",
+    "start": "node node_modules/http-server/bin/http-server ."
   },
   "author": "",
   "license": "ISC"
