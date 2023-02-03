@@ -4,10 +4,11 @@
   "description": "This is an example app showing you how to create a satellite tracker from scratch in JavaScript. [See the full guide here](https://dev.to/omar4ur/create-a-satellite-tracker-from-scratch-in-30-lines-of-javascript-32gk).",
   "main": "index.js",
   "dependencies": {
+    "http-server": "^14.1.1"
   },
-  "devDependencies": {},
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "initialize_for_node_http_server": "npm install",
+    "start_node_http_server": "node node_modules/http-server/bin/http-server ."
   },
   "author": "",
   "license": "ISC"
